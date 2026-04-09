@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Video Analysis{% endblock %}
+{% block assess_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='video.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <div class="card text-center">
+        <h1 class="title">Upload Video for Analysis</h1>
+        <p class="subtitle">Upload a short video for emotion detection</p>
+    </div>
+
+    <form method="POST" action="/analyze_video" enctype="multipart/form-data" class="card">
+
+        <input type="file" name="video" required class="input">
+        <br><br>
+
+        <button type="submit" class="btn btn-primary full-width">
+            Analyze Video
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Text Quiz{% endblock %}
+{% block assess_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='text-quiz.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <div class="card text-center">
+        <h1 class="title">Depression Assessment Quiz</h1>
+    </div>
+
+    <form method="POST" action="/text_quiz" class="card">
+
+        {% for i in range(1,10) %}
+        <div class="question">
+            <p>{{ i }}. Question {{ i }}</p>
+            <select name="q{{ i }}" class="input" required>
+                <option value="">Select</option>
+                <option value="0">Not at all</option>
+                <option value="1">Several days</option>
+                <option value="2">More than half</option>
+                <option value="3">Nearly every day</option>
+            </select>
+        </div>
+        {% endfor %}
+
+        <br>
+        <button class="btn btn-primary full-width" type="submit">
+            Submit Assessment
+        </button>
+
+    </form>
+
+</div>
+
+{% endblock %}

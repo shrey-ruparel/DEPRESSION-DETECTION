@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - DepreSenseX</title>
+
+    <!-- Global + Page CSS -->
+    <link rel="stylesheet" href="static/global.css">
+    <link rel="stylesheet" href="static/index.css">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="center">
+
+    <div class="login-wrapper">
+
+        <!-- Card -->
+        <div class="card fade-in">
+
+            <!-- Logo -->
+            <div class="logo-box">
+                <i class="fas fa-brain"></i>
+            </div>
+
+            <!-- Title -->
+            <h1 class="title text-center">DepreSenseX</h1>
+            <p class="subtitle text-center">Start your wellness journey</p>
+
+            <!-- Login Form -->
+            <form method="POST" action="/login">
+
+                <input class="input" type="email" name="email" placeholder="Email" required>
+                <br><br>
+
+                <input class="input" type="password" name="password" placeholder="Password" required>
+                <br><br>
+
+                <button type="submit" class="btn btn-primary full-width">
+                    Login
+                </button>
+
+            </form>
+
+            <!-- Register -->
+            <p class="register-text">
+                New user?
+                <a href="/register">Create account</a>
+            </p>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

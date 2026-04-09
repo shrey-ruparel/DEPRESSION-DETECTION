@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment{% endblock %}
+{% block assess_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assessment.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <div class="card text-center">
+        <h1 class="title">Choose Your Assessment</h1>
+        <p class="subtitle">Select how you want to evaluate your mental wellness</p>
+    </div>
+
+    <!-- same content -->
+</div>
+
+{% endblock %}

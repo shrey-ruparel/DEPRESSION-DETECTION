@@ -2,3 +2,5 @@ pyaudio
 librosa
 numpy
 soundfile
+flask
+flask-cors

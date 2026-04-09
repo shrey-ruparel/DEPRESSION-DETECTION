@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Results{% endblock %}
+{% block result_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='results.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <!-- Title -->
+    <div class="card text-center">
+        <h1 class="title">Your Wellness Report</h1>
+    </div>
+
+    <!-- Latest Result -->
+    <div class="card text-center">
+        <h2 class="title">{{ latest.prediction }}</h2>
+        <p class="subtitle">Score: {{ latest.score }}</p>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+        <h2 class="title">History</h2>
+
+        {% if results %}
+            {% for item in results %}
+                <div class="card">
+                    <p><strong>Type:</strong> {{ item.type }}</p>
+                    <p><strong>Prediction:</strong> {{ item.prediction }}</p>
+                    <p><strong>Score:</strong> {{ item.score }}</p>
+                    <p><strong>Date:</strong> {{ item.date }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No past results found</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

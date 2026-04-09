@@ -20,7 +20,16 @@ if (menuBtn && sidebar && overlay) {
 // ==============================
 // LOGOUT FUNCTION (REUSABLE)
 // ==============================
-function logout() {
+async function logout() {
+    try {
+        await fetch("http://127.0.0.1:5000/logout", {
+            method: "POST",
+            credentials: "include"
+        });
+    } catch (error) {
+        console.error("Logout failed");
+    }
+
     localStorage.clear();
     window.location.href = "index.html";
 }

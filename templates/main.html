@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block dash_active %}active{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <div class="card text-center">
+        <h1 class="title">Welcome to Your Wellness Dashboard</h1>
+        <p class="subtitle">
+            Use AI-powered tools to assess and track your mental wellness.
+        </p>
+    </div>
+
+    <div class="card text-center">
+        <h2 class="title">Start Your Assessment</h2>
+        <p class="subtitle">Choose a method to begin</p>
+
+        <br>
+
+        <a href="{{ url_for('assessment') }}" class="btn btn-primary">
+            🚀 Start Assessment
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}DepreSenseX{% endblock %}</title>
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+
+    {% block extra_css %}{% endblock %}
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2 class="sidebar-title">🧠 DepreSenseX</h2>
+
+        <nav>
+            <a href="{{ url_for('main') }}" class="{% block dash_active %}{% endblock %}">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+
+            <a href="{{ url_for('assessment') }}" class="{% block assess_active %}{% endblock %}">
+                <i class="fas fa-clipboard-list"></i> Assessment
+            </a>
+
+            <a href="{{ url_for('results_page') }}" class="{% block result_active %}{% endblock %}">
+                <i class="fas fa-chart-line"></i> Results
+            </a>
+
+            <a href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+
+</body>
+</html>
