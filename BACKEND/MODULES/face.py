@@ -1,23 +1,31 @@
 import cv2
 import numpy as np
-import time
 from tensorflow.keras.models import load_model
+from mtcnn import MTCNN
 
-# Load model
-model = load_model('backend/models/emotion_model.hdf5', compile=False)
+# =========================
+# LOAD MODEL
+# =========================
+model = load_model(r"C:\Users\rutuja\Desktop\dep_detection\DEPRESSION-DETECTION\BACKEND\MODELS\emotion_model_best.h5")
 
-# Load face detector
-face_cascade = cv2.CascadeClassifier(
-    cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-)
+# =========================
+# FACE DETECTOR
+# =========================
+detector = MTCNN()
 
-# Emotion labels
-emotions = ['Angry','Disgust','Fear','Happy','Sad','Surprise','Neutral']
+# =========================
+# CONFIG
+# =========================
+IMG_SIZE = 160
 
-# Store last predictions (for smoothing)
-emotion_history = []
+emotions = ['Angry','Disgust','Fear','Happy','Neutral','Sad','Surprise']
 
-# Convert emotion to score
+# smoothing
+prediction_history = []
+
+# =========================
+# EMOTION SCORE (optional)
+# =========================
 def emotion_to_score(emotion):
     mapping = {
         "Happy": 0,
@@ -30,84 +38,65 @@ def emotion_to_score(emotion):
     }
     return mapping.get(emotion, 1)
 
-
-def get_emotion_output(prediction):
-    confidence = float(np.max(prediction))
-    emotion = emotions[np.argmax(prediction)]
-
-    # Apply confidence threshold
-    if confidence < 0.5:
-        emotion = "Uncertain"
-
-    score = emotion_to_score(emotion)
-
-    return {
-        "emotion": emotion,
-        "confidence": confidence,
-        "score": score
-    }
-
-
-# 🔥 MAIN BACKEND FUNCTION
+# =========================
+# DETECT FUNCTION
+# =========================
 def detect_emotion(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    faces = detector.detect_faces(rgb)
 
     results = []
 
-    if len(faces) > 0:
-        # Take largest face only
-        faces = sorted(faces, key=lambda x: x[2]*x[3], reverse=True)
-        (x, y, w, h) = faces[0]
+    for face in faces:
+        x, y, w, h = face['box']
 
-        face = gray[y:y+h, x:x+w]
+        # fix negative coords
+        x, y = max(0, x), max(0, y)
 
-        # Improve contrast
-        face = cv2.equalizeHist(face)
+        face_img = rgb[y:y+h, x:x+w]
+
+        if face_img.size == 0:
+            continue
 
         # preprocess
-        face = cv2.resize(face, (64,64))
-        face = face / 255.0
-        face = np.reshape(face, (1,64,64,1))
+        face_img = cv2.resize(face_img, (IMG_SIZE, IMG_SIZE))
+        face_img = face_img / 255.0
+        face_img = np.reshape(face_img, (1, IMG_SIZE, IMG_SIZE, 3))
 
-        prediction = model.predict(face, verbose=0)
+        # prediction
+        pred = model.predict(face_img, verbose=0)
 
-        result = get_emotion_output(prediction)
+        # 🔥 smoothing
+        prediction_history.append(pred)
+        if len(prediction_history) > 10:
+            prediction_history.pop(0)
 
-        # 🔥 Smoothing (last 10 frames)
-        emotion_history.append(result["emotion"])
-        if len(emotion_history) > 10:
-            emotion_history.pop(0)
+        avg_pred = np.mean(prediction_history, axis=0)
 
-        # Most frequent emotion
-        final_emotion = max(set(emotion_history), key=emotion_history.count)
-        result["emotion"] = final_emotion
-        result["score"] = emotion_to_score(final_emotion)
+        emotion = emotions[np.argmax(avg_pred)]
+        confidence = float(np.max(avg_pred))
+        score = emotion_to_score(emotion)
 
-        result["box"] = [int(x), int(y), int(w), int(h)]
-
-        results.append(result)
+        results.append({
+            "box": [x, y, w, h],
+            "emotion": emotion,
+            "confidence": confidence,
+            "score": score
+        })
 
     return results
 
-
-# 🔧 MAIN RUN FUNCTION WITH 30s TRACKING
+# =========================
+# WEBCAM RUN
+# =========================
 def run_emotion_detection():
     cap = cv2.VideoCapture(0)
 
-    start_time = time.time()
-    session_duration = 30  # seconds
-
-    session_scores = []
-    session_emotions = []
-
-    print("Recording for 30 seconds...")
+    print("Press ESC to exit")
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Camera not working")
             break
 
         results = detect_emotion(frame)
@@ -115,30 +104,16 @@ def run_emotion_detection():
         for res in results:
             x, y, w, h = res["box"]
             emotion = res["emotion"]
-            score = res["score"]
-            confidence = res["confidence"]
+            conf = res["confidence"]
 
-            # 🔥 Store results
-            session_scores.append(score)
-            session_emotions.append(emotion)
-
-            text = f"{emotion} ({score}) [{confidence:.2f}]"
+            text = f"{emotion} ({conf:.2f})"
 
             cv2.putText(frame, text, (x, y-10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,255,0), 2)
 
             cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
 
-        # ⏱️ Show timer on screen
-        remaining = int(session_duration - (time.time() - start_time))
-        cv2.putText(frame, f"Time Left: {remaining}s", (10,30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0,0,255), 2)
-
-        cv2.imshow("Emotion Detection (30s Session)", frame)
-
-        # Stop after 30 seconds
-        if time.time() - start_time > session_duration:
-            break
+        cv2.imshow("Emotion Detection", frame)
 
         if cv2.waitKey(1) & 0xFF == 27:
             break
@@ -146,19 +121,8 @@ def run_emotion_detection():
     cap.release()
     cv2.destroyAllWindows()
 
-    # 🔥 FINAL RESULT
-    if session_scores:
-        avg_score = sum(session_scores) / len(session_scores)
-        final_emotion = max(set(session_emotions), key=session_emotions.count)
-
-        print("\n===== FINAL RESULT (30s) =====")
-        print(f"Final Emotion  : {final_emotion}")
-        print(f"Average Score  : {avg_score:.2f}")
-        print(f"Frames Analyzed: {len(session_scores)}")
-    else:
-        print("\nNo face detected during session.")
-
-
-# 🚀 RUN
+# =========================
+# RUN
+# =========================
 if __name__ == "__main__":
     run_emotion_detection()
