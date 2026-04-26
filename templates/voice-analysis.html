@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Voice Analysis{% endblock %}
+{% block assess_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='voice-analysis.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container fade-in">
+
+    <!-- ── HEADER ───────────────────────────────────── -->
+    <div class="voice-header">
+        <a href="{{ url_for('assessment') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <div class="voice-badge">
+            <i class="fas fa-microphone-lines"></i> Voice Analysis
+        </div>
+        <h1 class="voice-title">AI Voice Analysis</h1>
+        <p class="voice-subtitle">
+            Answer each question by typing your response below.
+            Your language patterns are analysed by our NLP model.
+        </p>
+
+        <!-- Tip -->
+        <div class="voice-tip">
+            <i class="fas fa-lightbulb"></i>
+            <span>
+                <strong>Tip:</strong> Write openly and in your own words —
+                the AI reads sentiment and meaning, not just keywords.
+                Aim for at least 2–3 sentences per question.
+            </span>
+        </div>
+    </div>
+
+    <!-- Flash messages from Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }}" style="max-width:680px; margin: 0 auto 16px;">
+                <i class="fas fa-circle-exclamation"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- ── FORM ─────────────────────────────────────── -->
+    <form method="POST" action="/analyze_voice" id="voiceForm">
+
+        {% for q in questions %}
+        <div class="voice-q-card" id="vq-{{ q.id }}">
+
+            <!-- Header -->
+            <div class="vq-header">
+                <span class="vq-num">{{ loop.index }} / {{ questions|length }}</span>
+                <span class="vq-required">Required</span>
+            </div>
+
+            <!-- Question text -->
+            <p class="vq-text">{{ q.text }}</p>
+
+            <!-- Textarea — plain, no JS voice recording -->
+            <div class="vq-textarea-wrap">
+                <label class="vq-textarea-label" for="txt-{{ q.id }}">
+                    <i class="fas fa-pencil"></i> Your answer
+                </label>
+                <textarea
+                    name="{{ q.id }}"
+                    id="txt-{{ q.id }}"
+                    class="input voice-textarea"
+                    rows="4"
+                    placeholder="Write your answer here…"
+                    required
+                    minlength="10"></textarea>
+            </div>
+
+        </div>
+        {% endfor %}
+
+        <!-- ── SUBMIT ──────────────────────────────── -->
+        <div class="voice-submit-area">
+            <p class="voice-submit-hint">
+                <i class="fas fa-info-circle"></i>
+                Fill in all {{ questions|length }} questions, then click the button below.
+            </p>
+            <button type="submit" class="btn btn-primary voice-submit-btn" id="submitVoice">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Analyse My Responses
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

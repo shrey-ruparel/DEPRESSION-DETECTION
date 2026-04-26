@@ -4,57 +4,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - DepreSenseX</title>
+    <title>Login — DepreSenseX</title>
+    <meta name="description" content="Sign in to your DepreSenseX mental wellness dashboard">
 
-    <!-- Global + Page CSS -->
-    <link rel="stylesheet" href="static/global.css">
-    <link rel="stylesheet" href="static/index.css">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='global.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
 </head>
 
-<body class="center">
+<body class="auth-body">
 
-    <div class="login-wrapper">
+    <!-- Animated background -->
+    <div class="auth-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
 
-        <!-- Card -->
-        <div class="card fade-in">
+    <div class="auth-split">
 
-            <!-- Logo -->
-            <div class="logo-box">
-                <i class="fas fa-brain"></i>
+        <!-- ── LEFT PANEL — Brand ────────────────── -->
+        <div class="auth-brand fade-in">
+            <div class="brand-content">
+                <div class="brand-icon">
+                    <i class="fas fa-brain"></i>
+                    <div class="icon-ring"></div>
+                </div>
+                <h1 class="brand-name">DepreSense<span class="brand-x">X</span></h1>
+                <p class="brand-tagline">AI-powered mental wellness assessment</p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-microphone-lines"></i></div>
+                        <div>
+                            <strong>Voice Analysis</strong>
+                            <span>Detects patterns in your speech</span>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div>
+                            <strong>PHQ-9 Quiz</strong>
+                            <span>Clinically validated questionnaire</span>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                        <div>
+                            <strong>Wellness Tracking</strong>
+                            <span>Monitor progress over time</span>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <!-- Title -->
-            <h1 class="title text-center">DepreSenseX</h1>
-            <p class="subtitle text-center">Start your wellness journey</p>
+        <!-- ── RIGHT PANEL — Form ────────────────── -->
+        <div class="auth-form-panel">
+            <div class="auth-card scale-in">
 
-            <!-- Login Form -->
-            <form method="POST" action="/login">
+                <div class="auth-header">
+                    <p class="auth-welcome">Welcome back 👋</p>
+                    <h2 class="auth-title">Sign in to your account</h2>
+                    <p class="auth-subtitle">Continue your wellness journey</p>
+                </div>
 
-                <input class="input" type="email" name="email" placeholder="Email" required>
-                <br><br>
+                <!-- Flask flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                                <i class="fas fa-circle-exclamation"></i> {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
 
-                <input class="input" type="password" name="password" placeholder="Password" required>
-                <br><br>
+                <form method="POST" action="/login">
 
-                <button type="submit" class="btn btn-primary full-width">
-                    Login
-                </button>
+                    <div class="form-group">
+                        <label class="form-label" for="email">
+                            <i class="fas fa-envelope"></i> Email address
+                        </label>
+                        <input class="input" type="email" id="email" name="email"
+                               placeholder="you@example.com" required autocomplete="email">
+                    </div>
 
-            </form>
+                    <div class="form-group">
+                        <label class="form-label" for="password">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input class="input" type="password" id="password" name="password"
+                               placeholder="••••••••" required autocomplete="current-password">
+                    </div>
 
-            <!-- Register -->
-            <p class="register-text">
-                New user?
-                <a href="/register">Create account</a>
-            </p>
+                    <button type="submit" class="btn btn-primary full-width auth-submit">
+                        <i class="fas fa-arrow-right-to-bracket"></i>
+                        Sign In
+                    </button>
 
+                </form>
+
+                <div class="auth-footer">
+                    <p>New here? <a href="/register" class="auth-link">Create a free account</a></p>
+                </div>
+
+            </div>
         </div>
 
     </div>
 
 </body>
-
 </html>

@@ -4,28 +4,114 @@
 {% block assess_active %}active{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='video.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='video-analysis.css') }}">
 {% endblock %}
 
 {% block content %}
 
 <div class="container fade-in">
 
-    <div class="card text-center">
-        <h1 class="title">Upload Video for Analysis</h1>
-        <p class="subtitle">Upload a short video for emotion detection</p>
+    <!-- ── HEADER ───────────────────────────────────── -->
+    <div class="video-header">
+        <a href="{{ url_for('assessment') }}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <div class="video-badge">
+            <i class="fas fa-video"></i> Video Analysis
+        </div>
+        <h1 class="video-title">Facial Emotion Detection</h1>
+        <p class="video-subtitle">
+            Upload a short video clip. Our AI model analyses your facial expressions
+            to detect emotional patterns associated with depression.
+        </p>
     </div>
 
-    <form method="POST" action="/analyze_video" enctype="multipart/form-data" class="card">
+    <!-- Flash messages from Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }}" style="max-width:680px; margin: 0 auto 16px;">
+                <i class="fas fa-circle-exclamation"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-        <input type="file" name="video" required class="input">
-        <br><br>
+    <!-- ── UPLOAD CARD ──────────────────────────────── -->
+    <div class="video-upload-card">
+        <div class="upload-glow"></div>
 
-        <button type="submit" class="btn btn-primary full-width">
-            Analyze Video
-        </button>
+        <form method="POST" action="/analyze_video" enctype="multipart/form-data">
 
-    </form>
+            <!-- File input (styled) -->
+            <div class="file-input-section">
+                <label class="file-label" for="videoInput">
+                    <div class="drop-icon-wrap">
+                        <i class="fas fa-cloud-arrow-up"></i>
+                        <div class="drop-pulse"></div>
+                    </div>
+                    <div class="drop-text">
+                        <strong>Click to select your video file</strong>
+                    </div>
+                    <div class="drop-hint">MP4, MOV, AVI — max 50 MB</div>
+                </label>
+                <input type="file" name="video" id="videoInput"
+                       accept="video/*" required class="file-input-native">
+            </div>
+
+            <!-- Tips -->
+            <div class="video-tips-row">
+                <div class="vtip">
+                    <i class="fas fa-lightbulb"></i>
+                    <span>Good lighting on your face</span>
+                </div>
+                <div class="vtip">
+                    <i class="fas fa-clock"></i>
+                    <span>10–60 seconds ideal</span>
+                </div>
+                <div class="vtip">
+                    <i class="fas fa-magnifying-glass"></i>
+                    <span>Face clearly visible</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn full-width video-submit-btn">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Analyse Video
+            </button>
+
+        </form>
+    </div>
+
+    <!-- ── HOW IT WORKS ─────────────────────────────── -->
+    <div class="video-how">
+        <h2 class="video-how-title">How the analysis works</h2>
+        <div class="video-steps">
+            <div class="vstep-item">
+                <div class="vstep-icon"><i class="fas fa-face-smile"></i></div>
+                <div>
+                    <strong>Facial landmark detection</strong>
+                    <span>68-point facial mesh mapped per frame</span>
+                </div>
+            </div>
+            <div class="vstep-arrow"><i class="fas fa-chevron-right"></i></div>
+            <div class="vstep-item">
+                <div class="vstep-icon" style="background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(37,99,235,0.15));"><i class="fas fa-brain" style="color:#67e8f9;"></i></div>
+                <div>
+                    <strong>Emotion classification</strong>
+                    <span>7-class emotion model per frame</span>
+                </div>
+            </div>
+            <div class="vstep-arrow"><i class="fas fa-chevron-right"></i></div>
+            <div class="vstep-item">
+                <div class="vstep-icon" style="background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(5,150,105,0.15));"><i class="fas fa-chart-bar" style="color:#6ee7b7;"></i></div>
+                <div>
+                    <strong>Depression score</strong>
+                    <span>Aggregated across all frames</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 

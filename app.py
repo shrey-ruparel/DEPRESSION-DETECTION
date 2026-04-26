@@ -1,11 +1,12 @@
 from flask import Flask, request, jsonify, session, render_template, url_for, redirect, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
-import sqlite3
 import os
 
-# Import your modules
-from modules.quiz import predict_result
+# Import modules
+from modules.quiz import predict_result, questions as quiz_questions
+from modules.voice import assess_depression
+from db import init_db, create_user, get_user_by_email, save_result, get_results_by_email
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -16,43 +17,11 @@ app.secret_key = "super_secret_key_123"
 # PATH SETUP
 # ==============================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database", "users.db")
 TEMP_PATH = os.path.join(BASE_DIR, "temp")
 
-os.makedirs(os.path.join(BASE_DIR, "database"), exist_ok=True)
 os.makedirs(TEMP_PATH, exist_ok=True)
 
-# ==============================
-# INIT DATABASE
-# ==============================
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    # USERS TABLE
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT UNIQUE,
-        password TEXT
-    )
-    """)
-
-    # RESULTS TABLE
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS results (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_email TEXT,
-        prediction TEXT,
-        score INTEGER,
-        type TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
+# Initialize the database on startup
 init_db()
 
 
@@ -65,27 +34,26 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
 
+        if not email or not password:
+            flash("Email and password are required.", "error")
+            return redirect(url_for('register'))
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters.", "error")
+            return redirect(url_for('register'))
+
         hashed_password = generate_password_hash(password)
 
         try:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-
-            cursor.execute(
-                "INSERT INTO users (email, password) VALUES (?, ?)",
-                (email, hashed_password)
-            )
-
-            conn.commit()
-            conn.close()
-
+            create_user(email, hashed_password)
+            flash("Account created! Please sign in.", "success")
             return redirect(url_for('home'))
-
         except:
-            return "User already exists"
+            flash("An account with that email already exists.", "error")
+            return redirect(url_for('register'))
 
     return render_template("register.html")
-    
+
 # ==============================
 # HOME
 # ==============================
@@ -101,14 +69,7 @@ def login():
     email = request.form.get('email')
     password = request.form.get('password')
 
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM users WHERE email=?", (email,))
-    user = cursor.fetchone()
-
-    conn.close()
+    user = get_user_by_email(email)
 
     if not user:
         flash("User does not exist", "error")
@@ -117,7 +78,7 @@ def login():
     if not check_password_hash(user["password"], password):
         flash("Incorrect password", "error")
         return redirect("/")
-    
+
     session['user'] = email
     return redirect("/main")
 
@@ -143,29 +104,7 @@ def results_page():
     if 'user' not in session:
         return redirect(url_for('home'))
 
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT prediction, score, type, created_at
-        FROM results
-        WHERE user_email = ?
-        ORDER BY created_at DESC
-    """, (session['user'],))
-
-    rows = cursor.fetchall()
-    conn.close()
-
-    results = []
-    for row in rows:
-        results.append({
-            "prediction": row[0],
-            "score": row[1],
-            "type": row[2],
-            "date": row[3]
-        })
-
+    results = get_results_by_email(session['user'])
     latest = results[0] if results else None
 
     return render_template("results.html", results=results, latest=latest)
@@ -173,35 +112,82 @@ def results_page():
 # ==============================
 # TEXT-QUIZ
 # ==============================
-@app.route('/text_quiz', methods=['POST'])
+@app.route('/text_quiz', methods=['GET', 'POST'])
 def predict_quiz():
     if 'user' not in session:
         return redirect(url_for('home'))
 
+    if request.method == 'GET':
+        return render_template('text-quiz.html', questions=list(enumerate(quiz_questions, 1)))
+
+    # POST — collect answers
     answers = []
     for i in range(1, 10):
         val = request.form.get(f'q{i}')
         if val is None:
-            return "Invalid input"
+            flash("Please answer all questions before submitting.", "error")
+            return render_template('text-quiz.html', questions=list(enumerate(quiz_questions, 1)))
         answers.append(int(val))
 
     result = predict_result(answers)
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO results (user_email, prediction, score, type)
-        VALUES (?, ?, ?, ?)
-    """, (
+    save_result(
         session['user'],
         result.get("prediction"),
-        result.get("score", 0),
+        result.get("confidence", 0),
         "quiz"
-    ))
+    )
 
-    conn.commit()
-    conn.close()
+    return redirect(url_for('results_page'))
+
+# ==============================
+# VOICE ANALYSIS
+# ==============================
+
+# The 5 open-ended questions from voice_stt.py
+VOICE_QUESTIONS = [
+    {"id": "q1", "text": "Please describe how you have been feeling over the past two weeks.", "indicator": "general_mood"},
+    {"id": "q2", "text": "Are there activities or hobbies that you used to enjoy? Do you still find interest in them?", "indicator": "anhedonia"},
+    {"id": "q3", "text": "How has your sleep been lately — do you sleep too much, too little, or wake up often?", "indicator": "sleep_disturbance"},
+    {"id": "q4", "text": "How do you feel about yourself and your future right now?", "indicator": "hopelessness_self_worth"},
+    {"id": "q5", "text": "Have you been feeling tired or low on energy even without much physical activity?", "indicator": "fatigue"},
+]
+
+@app.route('/voice_analysis', methods=['GET'])
+def voice_analysis_page():
+    if 'user' not in session:
+        return redirect(url_for('home'))
+    return render_template('voice-analysis.html', questions=VOICE_QUESTIONS)
+
+
+@app.route('/analyze_voice', methods=['POST'])
+def analyze_voice():
+    if 'user' not in session:
+        return redirect(url_for('home'))
+
+    # Build responses list from submitted transcripts
+    responses = []
+    for q in VOICE_QUESTIONS:
+        transcript = request.form.get(q["id"], "").strip()
+        responses.append({
+            "q_id":       q["id"],
+            "question":   q["text"],
+            "indicator":  q["indicator"],
+            "transcript": transcript,
+        })
+
+    result = assess_depression(responses)
+
+    depression_level = result.get("depression_level", "Unknown")
+    normalized_score = result.get("normalized_score", 0.0)
+    score_pct = round(normalized_score * 100)
+
+    save_result(
+        session['user'],
+        depression_level,
+        score_pct,
+        "voice"
+    )
 
     return redirect(url_for('results_page'))
 
@@ -213,13 +199,11 @@ def analyze_video():
     if 'user' not in session:
         return redirect(url_for('home'))
 
-    if 'video' not in request.files:
-        return "No video uploaded"
+    if 'video' not in request.files or request.files['video'].filename == '':
+        flash("Please select a video file before submitting.", "error")
+        return redirect(url_for('video_analysis_page'))
 
     file = request.files['video']
-
-    if file.filename == "":
-        return "No file selected"
 
     # Save file
     file_path = os.path.join(TEMP_PATH, "temp.webm")
@@ -228,7 +212,6 @@ def analyze_video():
     # PLACEHOLDER ANALYSIS
     voice_score = 1
     face_score = 1
-
     final_score = voice_score + face_score
 
     if final_score <= 1:
@@ -238,23 +221,7 @@ def analyze_video():
     else:
         label = "High"
 
-    # SAVE RESULT
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT INTO results (user_email, prediction, score, type)
-        VALUES (?, ?, ?, ?)
-    """, (
-        session['user'],
-        label,
-        final_score,
-        "video"
-    ))
-
-    conn.commit()
-    conn.close()
-
+    save_result(session['user'], label, final_score, "video")
     return redirect(url_for('results_page'))
 
 # ==============================
@@ -273,32 +240,11 @@ def get_results():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT prediction, score, type, created_at
-        FROM results
-        WHERE user_email = ?
-        ORDER BY created_at DESC
-    """, (session['user'],))
-
-    rows = cursor.fetchall()
-    conn.close()
-
-    results = []
-    for row in rows:
-        results.append({
-            "prediction": row[0],
-            "score": row[1],
-            "type": row[2],
-            "date": row[3]
-        })
-
+    results = get_results_by_email(session['user'])
     return jsonify(results)
 
 # ==============================
 # RUN
 # ==============================
 if __name__ == '__main__':
-    app.run(debug=True, host = "0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")
