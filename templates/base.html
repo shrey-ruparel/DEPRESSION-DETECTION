@@ -3,50 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DepreSenseX{% endblock %} — Mental Wellness AI</title>
+    <meta name="description" content="DepreSenseX — AI-powered mental wellness assessment platform">
 
-    <title>{% block title %}DepreSenseX{% endblock %}</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <!-- Global CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='global.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
 
     {% block extra_css %}{% endblock %}
-
-    <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2 class="sidebar-title">🧠 DepreSenseX</h2>
+    <!-- ── SIDEBAR ─────────────────────────────────── -->
+    <aside class="sidebar slide-in-left">
 
+        <!-- Brand -->
+        <div class="sidebar-title">
+            <i class="fas fa-brain" style="background: linear-gradient(135deg,#7c3aed,#06b6d4); -webkit-background-clip:text; -webkit-text-fill-color:transparent;"></i>
+            DepreSenseX
+        </div>
+
+        <!-- Navigation -->
         <nav>
-            <a href="{{ url_for('main') }}" class="{% block dash_active %}{% endblock %}">
-                <i class="fas fa-home"></i> Dashboard
+            <span class="nav-label">Main</span>
+
+            <a href="{{ url_for('main') }}" id="nav-dashboard" class="{% block dash_active %}{% endblock %}">
+                <i class="fas fa-house"></i> Dashboard
             </a>
 
-            <a href="{{ url_for('assessment') }}" class="{% block assess_active %}{% endblock %}">
-                <i class="fas fa-clipboard-list"></i> Assessment
+            <a href="{{ url_for('assessment') }}" id="nav-assess" class="{% block assess_active %}{% endblock %}">
+                <i class="fas fa-clipboard-check"></i> Assessment
             </a>
 
-            <a href="{{ url_for('results_page') }}" class="{% block result_active %}{% endblock %}">
+            <a href="{{ url_for('results_page') }}" id="nav-results" class="{% block result_active %}{% endblock %}">
                 <i class="fas fa-chart-line"></i> Results
             </a>
 
-            <a href="{{ url_for('logout') }}">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <span class="nav-label" style="margin-top:12px;">Account</span>
+
+            <a href="#" style="color: var(--text-secondary);">
+                <i class="fas fa-circle-user"></i> Profile
             </a>
         </nav>
-    </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
+        <!-- Logout -->
+        <div class="sidebar-footer">
+            <a href="{{ url_for('logout') }}">
+                <i class="fas fa-right-from-bracket"></i> Logout
+            </a>
+        </div>
+    </aside>
+
+    <!-- ── MAIN CONTENT ────────────────────────────── -->
+    <main class="main-content">
         {% block content %}{% endblock %}
-    </div>
+    </main>
 
-    <script src="{{ url_for('static', filename='main.js') }}"></script>
 
 </body>
 </html>

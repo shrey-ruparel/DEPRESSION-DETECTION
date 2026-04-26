@@ -11,12 +11,96 @@
 
 <div class="container fade-in">
 
-    <div class="card text-center">
-        <h1 class="title">Choose Your Assessment</h1>
-        <p class="subtitle">Select how you want to evaluate your mental wellness</p>
+    <!-- ── PAGE HEADER ─────────────────────────────── -->
+    <div class="assess-header">
+        <div class="assess-badge">
+            <i class="fas fa-clipboard-check"></i> Choose Assessment
+        </div>
+        <h1 class="assess-title">How would you like to<br>assess your wellness?</h1>
+        <p class="assess-subtitle">
+            Select the method that feels most comfortable for you. Both are AI-powered and take only a few minutes.
+        </p>
     </div>
 
-    <!-- same content -->
+    <!-- ── CARDS GRID ──────────────────────────────── -->
+    <div class="assess-grid">
+
+        <!-- ── QUIZ CARD ─────────────────────── -->
+        <div class="assess-card" id="quizCard">
+            <div class="assess-card-glow glow-purple"></div>
+
+            <div class="assess-card-head">
+                <div class="assess-icon-wrap icon-quiz">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="assess-tag">~2–3 min</div>
+            </div>
+
+            <h2 class="assess-card-title">PHQ-9 Quiz</h2>
+            <p class="assess-card-desc">
+                Answer 9 short clinically validated questions about your mood
+                and behaviour over the <strong>past two weeks</strong>.
+                Ideal if you prefer a structured, written approach.
+            </p>
+
+            <ul class="assess-features">
+                <li><i class="fas fa-check-circle"></i> 9 multiple-choice questions</li>
+                <li><i class="fas fa-check-circle"></i> Based on the PHQ-9 scale</li>
+                <li><i class="fas fa-check-circle"></i> Instant AI-scored result</li>
+            </ul>
+
+            <a href="{{ url_for('predict_quiz') }}" class="btn btn-primary full-width assess-btn" id="startQuizBtn">
+                <i class="fas fa-play"></i> Start Quiz
+            </a>
+        </div>
+
+        <!-- ── VOICE CARD ─────────────────────── -->
+        <div class="assess-card" id="voiceCard">
+            <div class="assess-card-glow glow-cyan"></div>
+
+            <div class="assess-card-head">
+                <div class="assess-icon-wrap icon-voice">
+                    <i class="fas fa-microphone-lines"></i>
+                </div>
+                <div class="assess-tag" style="background:rgba(6,182,212,0.15); color:#67e8f9; border-color:rgba(6,182,212,0.3);">~5 min</div>
+            </div>
+
+            <h2 class="assess-card-title">Voice Analysis</h2>
+            <p class="assess-card-desc">
+                Answer 5 open-ended questions by speaking or typing.
+                Our NLP model analyses your <strong>language patterns</strong>,
+                sentiment, and expression depth.
+            </p>
+
+            <ul class="assess-features">
+                <li><i class="fas fa-check-circle" style="color:#67e8f9;"></i> 5 open-ended questions</li>
+                <li><i class="fas fa-check-circle" style="color:#67e8f9;"></i> Real-time speech-to-text</li>
+                <li><i class="fas fa-check-circle" style="color:#67e8f9;"></i> NLP sentiment analysis</li>
+            </ul>
+
+            <a href="{{ url_for('voice_analysis_page') }}" class="btn full-width assess-btn assess-btn-cyan" id="startVoiceBtn">
+                <i class="fas fa-microphone"></i> Start Voice Analysis
+            </a>
+        </div>
+
+    </div>
+
+    <!-- ── INFO FOOTER ─────────────────────────────── -->
+    <div class="assess-info-row">
+        <div class="assess-info-item">
+            <i class="fas fa-lock"></i>
+            <span>Your responses are encrypted and private</span>
+        </div>
+        <div class="assess-info-item">
+            <i class="fas fa-clock"></i>
+            <span>Results available instantly after completion</span>
+        </div>
+        <div class="assess-info-item">
+            <i class="fas fa-rotate-left"></i>
+            <span>Retake anytime to track changes</span>
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}

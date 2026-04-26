@@ -1,44 +1,196 @@
-/* =========================
-   ASSESSMENT PAGE STYLES
-========================= */
+/* ====================================================
+   ASSESSMENT PAGE — assessment.css
+==================================================== */
 
-/* Grid Layout */
-.assessment-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 25px;
-    margin-top: 30px;
-}
-
-/* Option Card */
-.option-card {
+/* ─── PAGE HEADER ─────────────────────────────────── */
+.assess-header {
     text-align: center;
-    transition: 0.3s;
+    padding: 40px 0 32px;
 }
 
-.option-card:hover {
-    transform: translateY(-8px);
+.assess-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    background: rgba(124,58,237,0.12);
+    border: 1px solid rgba(124,58,237,0.25);
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 20px;
 }
 
-/* Icons */
-.option-icon {
-    width: 70px;
-    height: 70px;
-    margin: auto;
-    margin-bottom: 15px;
+.assess-title {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -1px;
+    line-height: 1.2;
+    margin-bottom: 14px;
+}
 
-    border-radius: 18px;
-    background: linear-gradient(to right, var(--primary), var(--secondary));
-    color: white;
+.assess-subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
 
+/* ─── CARDS GRID ──────────────────────────────────── */
+.assess-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+/* ─── ASSESSMENT CARD ─────────────────────────────── */
+.assess-card {
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    padding: 36px 32px;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+    cursor: default;
+}
+
+.assess-card:hover {
+    transform: translateY(-6px);
+    background: rgba(255,255,255,0.07);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+}
+
+/* Glow effect */
+.assess-card-glow {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+    border-radius: inherit;
+}
+.assess-card:hover .assess-card-glow { opacity: 1; }
+.glow-purple { background: radial-gradient(ellipse at top left, rgba(124,58,237,0.15) 0%, transparent 60%); }
+.glow-cyan   { background: radial-gradient(ellipse at top left, rgba(6,182,212,0.12) 0%, transparent 60%); }
+
+/* Card header row */
+.assess-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+/* Icon */
+.assess-icon-wrap {
+    width: 60px; height: 60px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+}
+
+.icon-quiz  { background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.15)); color: #a78bfa; }
+.icon-voice { background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(37,99,235,0.15)); color: #67e8f9; }
+
+/* Time tag */
+.assess-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.3);
+    letter-spacing: 0.3px;
+}
+
+/* Card text */
+.assess-card-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.assess-card-desc {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 24px;
+}
+
+.assess-card-desc strong { color: var(--text-primary); }
+
+/* Features list */
+.assess-features {
+    list-style: none;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assess-features li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+}
+
+.assess-features i {
+    color: #a78bfa;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* Buttons */
+.assess-btn { height: 52px; font-size: 15px; letter-spacing: 0.3px; }
+
+.assess-btn-cyan {
+    background: linear-gradient(135deg, #06b6d4, #2563eb);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(6,182,212,0.35);
+}
+.assess-btn-cyan:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 32px rgba(6,182,212,0.5);
+}
+
+/* ─── INFO FOOTER ─────────────────────────────────── */
+.assess-info-row {
     display: flex;
     align-items: center;
     justify-content: center;
-
-    font-size: 26px;
+    gap: 32px;
+    padding: 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
 }
 
-/* Full width button */
-.full-width {
-    width: 100%;
-}  
+.assess-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.assess-info-item i { color: #a78bfa; font-size: 13px; }
+
+/* ─── RESPONSIVE ──────────────────────────────────── */
+@media (max-width: 768px) {
+    .assess-grid { grid-template-columns: 1fr; }
+    .assess-title { font-size: 1.8rem; }
+    .assess-info-row { flex-direction: column; gap: 12px; text-align: center; }
+}
