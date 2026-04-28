@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Full AI Assessment - Stage 2{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='voice-analysis.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='video-assessment.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+
+    <div class="video-header">
+        <div class="video-badge">
+            <i class="fas fa-brain"></i> Full AI Assessment — Stage 2
+        </div>
+        <h1 class="video-title">Face & Voice Analysis</h1>
+        <p class="assess-subtitle">
+            Please ensure your face is clearly visible. Read the question below and answer aloud.
+        </p>
+    </div>
+
+    <!-- Flash messages from Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }}" style="max-width:680px; margin: 0 auto 16px;">
+                <i class="fas fa-circle-exclamation"></i> {{ message }}
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="video-layout">
+        
+        <!-- Camera Feed -->
+        <div class="camera-container">
+            <video id="webcamVideo" autoplay muted playsinline></video>
+            <div class="camera-overlay"></div>
+            <div class="recording-indicator" id="recIndicator">
+                <div class="recording-dot"></div>
+                Recording
+            </div>
+            <div class="camera-error" id="camError" style="display: none;">
+                <i class="fas fa-video-slash"></i>
+                <p>Camera access denied or unavailable.<br>Please allow camera permissions.</p>
+            </div>
+        </div>
+
+        <!-- Chat / Questions Interface -->
+        <div class="chat-container">
+            <form action="{{ url_for('analyze_full') }}" method="POST" id="videoAssessmentForm">
+                
+                {% for q in questions %}
+                <div class="question-step {% if loop.first %}active{% endif %}" id="step-{{ loop.index }}">
+                    <div class="q-header">
+                        <span class="q-badge">Question {{ loop.index }} of {{ questions|length }}</span>
+                    </div>
+                    <h2 class="q-text">{{ q.text }}</h2>
+
+                    <div class="q-controls">
+                        <button type="button" class="btn mic-btn" id="micBtn-{{ q.id }}" onclick="toggleRecording('{{ q.id }}')">
+                            <i class="fas fa-microphone"></i> <span>Tap to Answer</span>
+                        </button>
+                        
+                        <div class="vq-textarea-wrap">
+                            <label for="{{ q.id }}">Transcript:</label>
+                            <textarea class="form-control voice-textarea" id="{{ q.id }}" name="{{ q.id }}" 
+                                      placeholder="Your answer will appear here as you speak..."></textarea>
+                        </div>
+                        
+                        {% if loop.last %}
+                        <button type="submit" class="btn nav-btn">
+                            <i class="fas fa-check-circle"></i> Submit Full Assessment
+                        </button>
+                        {% else %}
+                        <button type="button" class="btn nav-btn" {{ ('onclick="nextQuestion(' ~ loop.index ~ ')"') | safe }}>
+                            Next Question <i class="fas fa-arrow-right"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+            </form>
+        </div>
+
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // --- WEBCAM INITIALISATION ---
+    const videoElement = document.getElementById('webcamVideo');
+    const camError = document.getElementById('camError');
+
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            videoElement.srcObject = stream;
+        } catch (err) {
+            console.error("Error accessing camera: ", err);
+            camError.style.display = 'flex';
+        }
+    }
+    
+    // Start camera on load
+    window.addEventListener('DOMContentLoaded', startCamera);
+
+
+    // --- SPEECH RECOGNITION ---
+    const recIndicator = document.getElementById('recIndicator');
+    let recognition;
+    let isRecording = false;
+    let currentInputId = null;
+    let currentMicBtn = null;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onstart = function() {
+            isRecording = true;
+            recIndicator.classList.add('active');
+            if (currentMicBtn) {
+                currentMicBtn.classList.add('recording');
+                currentMicBtn.querySelector('span').innerText = 'Recording... Tap to Stop';
+                currentMicBtn.querySelector('i').className = 'fas fa-stop-circle';
+            }
+        };
+
+        recognition.onresult = function(event) {
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + ' ';
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+
+            if (currentInputId) {
+                const targetInput = document.getElementById(currentInputId);
+                // Append final transcript
+                if (finalTranscript) {
+                    targetInput.value += finalTranscript;
+                }
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error:", event.error);
+            stopRecordingUI();
+        };
+
+        recognition.onend = function() {
+            // If the browser stopped it automatically (silence), but we didn't press stop:
+            if (isRecording) {
+                // You can optionally restart here if desired, or let it stay stopped.
+                stopRecordingUI();
+            }
+        };
+    } else {
+        alert("Speech Recognition API is not supported in this browser. Please type your answers or use Chrome/Edge.");
+    }
+
+    function stopRecordingUI() {
+        isRecording = false;
+        recIndicator.classList.remove('active');
+        if (currentMicBtn) {
+            currentMicBtn.classList.remove('recording');
+            currentMicBtn.querySelector('span').innerText = 'Tap to Answer';
+            currentMicBtn.querySelector('i').className = 'fas fa-microphone';
+        }
+    }
+
+    function toggleRecording(inputId) {
+        if (!recognition) return;
+
+        if (isRecording) {
+            // Stop current
+            recognition.stop();
+            stopRecordingUI();
+        } else {
+            // Start new
+            currentInputId = inputId;
+            currentMicBtn = document.getElementById('micBtn-' + inputId);
+            // Optional: clear input before starting? 
+            // document.getElementById(inputId).value = ''; 
+            try {
+                recognition.start();
+            } catch(e) {
+                // If it was already started
+            }
+        }
+    }
+
+    // --- QUESTION NAVIGATION ---
+    function nextQuestion(currentIndex) {
+        // Stop recording if active when switching
+        if (isRecording) {
+            recognition.stop();
+            stopRecordingUI();
+        }
+
+        // Hide current
+        document.getElementById('step-' + currentIndex).classList.remove('active');
+        // Show next
+        document.getElementById('step-' + (currentIndex + 1)).classList.add('active');
+    }
+</script>
+{% endblock %}
+{% endblock %}

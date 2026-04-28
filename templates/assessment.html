@@ -83,6 +83,34 @@
             </a>
         </div>
 
+        <!-- ── FULL ASSESSMENT CARD ─────────────────────── -->
+        <div class="assess-card recommended-card" id="fullCard">
+            <div class="recommended-badge">Recommended</div>
+            <div class="assess-card-glow glow-blue"></div>
+
+            <div class="assess-card-head">
+                <div class="assess-icon-wrap icon-full">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="assess-tag" style="background:rgba(37,99,235,0.15); color:#60a5fa; border-color:rgba(37,99,235,0.3);">~10-15 min</div>
+            </div>
+
+            <h2 class="assess-card-title">Full AI Assessment</h2>
+            <p class="assess-card-desc">
+                Combine text, voice, and video for best results.
+            </p>
+
+            <ul class="assess-features">
+                <li><i class="fas fa-check-circle" style="color:#60a5fa;"></i> Multi-modal analysis</li>
+                <li><i class="fas fa-check-circle" style="color:#60a5fa;"></i> Highest accuracy</li>
+                <li><i class="fas fa-check-circle" style="color:#60a5fa;"></i> Personalized insights</li>
+            </ul>
+
+            <a href="{{ url_for('full_assessment_start') }}" class="btn full-width assess-btn" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; box-shadow: 0 4px 20px rgba(79,70,229,0.35);" id="startFullBtn">
+                Start &rarr;
+            </a>
+        </div>
+
     </div>
 
     <!-- ── INFO FOOTER ─────────────────────────────── -->

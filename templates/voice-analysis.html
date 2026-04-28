@@ -62,8 +62,15 @@
             <!-- Question text -->
             <p class="vq-text">{{ q.text }}</p>
 
-            <!-- Textarea — plain, no JS voice recording -->
+            <!-- Textarea with JS voice recording -->
             <div class="vq-textarea-wrap">
+                <div class="vq-controls">
+                    <button type="button" class="mic-btn" id="mic-{{ q.id }}" onclick="toggleRecording('{{ q.id }}')">
+                        <i class="fas fa-microphone"></i> <span>Start Recording</span>
+                    </button>
+                    <span class="mic-status" id="status-{{ q.id }}"></span>
+                </div>
+
                 <label class="vq-textarea-label" for="txt-{{ q.id }}">
                     <i class="fas fa-pencil"></i> Your answer
                 </label>
@@ -95,5 +102,90 @@
     </form>
 
 </div>
+
+{% block extra_js %}
+<script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognizers = {}; 
+    const isRecording = {}; 
+
+    if (!SpeechRecognition) {
+        document.querySelectorAll('.mic-btn').forEach(btn => {
+            btn.style.display = 'none';
+        });
+        console.warn("Speech Recognition API is not supported in this browser.");
+    }
+
+    function toggleRecording(q_id) {
+        if (!SpeechRecognition) {
+            alert("Your browser does not support voice recording. Please use Google Chrome.");
+            return;
+        }
+
+        const btn = document.getElementById('mic-' + q_id);
+        const statusText = document.getElementById('status-' + q_id);
+        const textArea = document.getElementById('txt-' + q_id);
+        const btnText = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+
+        if (isRecording[q_id]) {
+            // STOP RECORDING
+            recognizers[q_id].stop();
+            return;
+        }
+
+        // START RECORDING
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US'; 
+
+        recognizers[q_id] = recognition;
+        isRecording[q_id] = true;
+
+        // Update UI
+        btn.classList.add('recording');
+        btnText.textContent = "Stop Recording";
+        icon.classList.remove('fa-microphone');
+        icon.classList.add('fa-stop-circle');
+        statusText.textContent = "Listening...";
+        
+        let finalTranscript = textArea.value ? textArea.value + " " : "";
+
+        recognition.onresult = (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + " ";
+                } else {
+                    interimTranscript += event.results[i][0].transcript;
+                }
+            }
+            textArea.value = finalTranscript + interimTranscript;
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            statusText.textContent = "Error: " + event.error;
+            stopUI();
+        };
+
+        recognition.onend = () => {
+            stopUI();
+        };
+
+        function stopUI() {
+            isRecording[q_id] = false;
+            btn.classList.remove('recording');
+            btnText.textContent = "Start Recording";
+            icon.classList.remove('fa-stop-circle');
+            icon.classList.add('fa-microphone');
+            statusText.textContent = "";
+        }
+
+        recognition.start();
+    }
+</script>
+{% endblock %}
 
 {% endblock %}

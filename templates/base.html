@@ -48,11 +48,10 @@
                 <i class="fas fa-chart-line"></i> Results
             </a>
 
-            <span class="nav-label" style="margin-top:12px;">Account</span>
-
-            <a href="#" style="color: var(--text-secondary);">
-                <i class="fas fa-circle-user"></i> Profile
+            <a href="{{ url_for('history_page') }}" id="nav-history" class="{% block history_active %}{% endblock %}">
+                <i class="fas fa-clock-rotate-left"></i> History
             </a>
+
         </nav>
 
         <!-- Logout -->

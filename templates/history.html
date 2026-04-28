@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment History{% endblock %}
+{% block history_active %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='history.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container fade-in">
+    <div class="history-container">
+        
+        <div class="history-page-header">
+            <h1 class="history-page-title">Detailed History</h1>
+            <p class="history-page-subtitle">Review all your past assessments, view detailed breakdown reports, and download them as PDFs.</p>
+        </div>
+
+        {% if results %}
+            {% for item in results %}
+            <div class="history-item-wrap" id="history-card-{{ loop.index }}">
+                
+                <!-- Summary Row (Clickable) -->
+                <div class="history-summary" {{ ('onclick="toggleAccordion(\'' ~ loop.index ~ '\')"') | safe }}>
+                    <div class="hist-icon-wrap {{ 'hist-full' if item.type == 'full' else 'hist-voice' if item.type == 'voice' else 'hist-quiz' }}">
+                        <i class="{{ 'fas fa-brain' if item.type == 'full' else 'fas fa-microphone-lines' if item.type == 'voice' else 'fas fa-clipboard-list' }}"></i>
+                    </div>
+
+                    <div class="hist-details">
+                        <div class="hist-top">
+                            <span class="hist-type">{{ item.type | capitalize if item.type else 'Assessment' }}</span>
+                            <span class="hist-date">{{ item.date }}</span>
+                        </div>
+                        <div class="hist-prediction">{{ item.prediction }}</div>
+                    </div>
+
+                    <div class="hist-score-wrap">
+                        {% set isc = item.score | default(0) | float | int %}
+                        {% if isc <= 4 %}{% set is_cls = 'score-min' %}
+                        {% elif isc <= 9 %}{% set is_cls = 'score-mild' %}
+                        {% elif isc <= 14 %}{% set is_cls = 'score-mod' %}
+                        {% elif isc <= 19 %}{% set is_cls = 'score-sev' %}
+                        {% else %}{% set is_cls = 'score-crit' %}{% endif %}
+
+                        <div class="hist-score {{ is_cls }}">{{ isc }}</div>
+                        <div class="hist-score-label">/ 27</div>
+                    </div>
+
+                    <i class="fas fa-chevron-down hist-chevron"></i>
+                </div>
+
+                <!-- Detailed Report -->
+                <div class="history-detail" id="report-content-{{ loop.index }}">
+                    <div class="report-header">
+                        <h3 class="report-title">Assessment Report</h3>
+                        {% if item.detailed_data %}
+                        <button class="btn-pdf" {{ ('onclick="downloadPDF(' ~ loop.index ~ ', \'' ~ item.date ~ '\', \'' ~ item.type ~ '\')"') | safe }}>
+                            <i class="fas fa-download"></i> Download PDF
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    {% if not item.detailed_data %}
+                        <div class="no-data-msg">
+                            <i class="fas fa-info-circle" style="margin-right: 6px;"></i> Detailed answers are not available for legacy assessments taken before the detailed tracking update.
+                        </div>
+                    {% else %}
+                        
+                        <div class="qa-list">
+                            <!-- Handle Full Assessment (Dict of lists) -->
+                            {% if item.type == 'full' %}
+                                <h4 style="color: #a78bfa; margin-bottom: 8px; font-size: 14px; text-transform: uppercase;">Part 1: Text Quiz</h4>
+                                {% for q in item.detailed_data.text_quiz %}
+                                <div class="qa-item">
+                                    <div class="qa-question">{{ loop.index }}. {{ q.question }}</div>
+                                    <div class="qa-answer">Selected Option Weight: {{ q.answer }}</div>
+                                </div>
+                                {% endfor %}
+
+                                <h4 style="color: #67e8f9; margin-top: 16px; margin-bottom: 8px; font-size: 14px; text-transform: uppercase;">Part 2: Voice Analysis</h4>
+                                {% for q in item.detailed_data.voice_analysis %}
+                                <div class="qa-item">
+                                    <div class="qa-question">{{ loop.index }}. {{ q.question }}</div>
+                                    <div class="qa-answer voice-ans">"{{ q.transcript if q.transcript else '(No verbal response recorded)' }}"</div>
+                                </div>
+                                {% endfor %}
+                            
+                            <!-- Handle Standalone Text Quiz (List) -->
+                            {% elif item.type == 'quiz' %}
+                                {% for q in item.detailed_data %}
+                                <div class="qa-item">
+                                    <div class="qa-question">{{ loop.index }}. {{ q.question }}</div>
+                                    <div class="qa-answer">Selected Option Weight: {{ q.answer }}</div>
+                                </div>
+                                {% endfor %}
+
+                            <!-- Handle Standalone Voice Analysis (List) -->
+                            {% elif item.type == 'voice' %}
+                                {% for q in item.detailed_data %}
+                                <div class="qa-item">
+                                    <div class="qa-question">{{ loop.index }}. {{ q.question }}</div>
+                                    <div class="qa-answer voice-ans">"{{ q.transcript if q.transcript else '(No verbal response recorded)' }}"</div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                    {% endif %}
+                </div>
+                
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-results" style="margin-top: 40px; text-align: center; background: rgba(255,255,255,0.03); padding: 60px 20px; border-radius: 20px;">
+                <i class="fas fa-folder-open" style="font-size: 48px; color: rgba(255,255,255,0.2); margin-bottom: 16px;"></i>
+                <h3 style="color: var(--text-primary); font-family: 'Space Grotesk', sans-serif;">No History Found</h3>
+                <p style="color: var(--text-secondary); margin-top: 8px;">Take your first assessment to generate a detailed report.</p>
+                <a href="{{ url_for('assessment') }}" class="btn btn-primary" style="margin-top: 24px; display: inline-block;">Take Assessment</a>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function toggleAccordion(index) {
+        const wrap = document.getElementById('history-card-' + index);
+        wrap.classList.toggle('open');
+    }
+
+    function downloadPDF(index, dateStr, typeStr) {
+        // Find the report content block
+        const element = document.getElementById('report-content-' + index);
+        
+        // We will clone it so we can remove the download button from the PDF
+        const clone = element.cloneNode(true);
+        const btn = clone.querySelector('.btn-pdf');
+        if(btn) btn.remove(); // Don't print the button!
+
+        // Force it to be visible for the PDF renderer if it was hidden
+        clone.style.display = 'block';
+
+        // Add a title specifically for the PDF
+        const titleHtml = `
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 10px;">
+                <h1 style="color: #2c3e50; font-family: Arial, sans-serif; margin: 0;">DepreSenseX Report</h1>
+                <p style="color: #7f8c8d; font-size: 14px; margin-top: 5px;">Type: ${typeStr.toUpperCase()} | Date: ${dateStr}</p>
+            </div>
+        `;
+        clone.insertAdjacentHTML('afterbegin', titleHtml);
+
+        // Styling overrides to ensure dark theme text looks good on white PDF paper
+        clone.style.background = '#ffffff';
+        clone.style.color = '#000000';
+        clone.style.padding = '30px';
+        
+        // Fix font colors internally for the clone
+        const questions = clone.querySelectorAll('.qa-question');
+        questions.forEach(q => q.style.color = '#111');
+        
+        const answers = clone.querySelectorAll('.qa-answer');
+        answers.forEach(a => {
+            a.style.color = '#333';
+            a.style.borderLeftColor = '#2563eb';
+        });
+
+        // HTML2PDF settings
+        const opt = {
+            margin:       0.5,
+            filename:     `Assessment_Report_${dateStr.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Generate and save
+        html2pdf().set(opt).from(clone).save();
+    }
+</script>
+{% endblock %}
+{% endblock %}

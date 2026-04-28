@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 
 # ==============================
@@ -39,6 +40,12 @@ def init_db():
     )
     """)
 
+    # SAFELY ADD detailed_data COLUMN IF IT DOES NOT EXIST
+    try:
+        cursor.execute("ALTER TABLE results ADD COLUMN detailed_data TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column likely already exists
+
     conn.commit()
     conn.close()
 
@@ -72,14 +79,17 @@ def get_user_by_email(email):
 # ==============================
 # RESULT HELPERS
 # ==============================
-def save_result(user_email, prediction, score, result_type):
+def save_result(user_email, prediction, score, result_type, detailed_data=None):
     """Insert a new assessment result for the given user."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    
+    data_str = json.dumps(detailed_data) if detailed_data else None
+    
     cursor.execute("""
-        INSERT INTO results (user_email, prediction, score, type)
-        VALUES (?, ?, ?, ?)
-    """, (user_email, prediction, score, result_type))
+        INSERT INTO results (user_email, prediction, score, type, detailed_data)
+        VALUES (?, ?, ?, ?, ?)
+    """, (user_email, prediction, score, result_type, data_str))
     conn.commit()
     conn.close()
 
@@ -90,7 +100,7 @@ def get_results_by_email(user_email):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT prediction, score, type, created_at
+        SELECT prediction, score, type, created_at, detailed_data
         FROM results
         WHERE user_email = ?
         ORDER BY created_at DESC
@@ -98,15 +108,24 @@ def get_results_by_email(user_email):
     rows = cursor.fetchall()
     conn.close()
 
-    return [
-        {
+    results_list = []
+    for row in rows:
+        data_json = None
+        if "detailed_data" in row.keys() and row["detailed_data"]:
+            try:
+                data_json = json.loads(row["detailed_data"])
+            except:
+                pass
+                
+        results_list.append({
             "prediction": row["prediction"],
             "score":      row["score"],
             "type":       row["type"],
             "date":       _fmt_date(row["created_at"]),
-        }
-        for row in rows
-    ]
+            "detailed_data": data_json
+        })
+
+    return results_list
 
 
 def _fmt_date(raw):

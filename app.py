@@ -6,6 +6,7 @@ import os
 # Import modules
 from modules.quiz import predict_result, questions as quiz_questions
 from modules.voice import assess_depression
+from modules.recommendations import get_recommendations
 from db import init_db, create_user, get_user_by_email, save_result, get_results_by_email
 
 app = Flask(__name__)
@@ -106,8 +107,13 @@ def results_page():
 
     results = get_results_by_email(session['user'])
     latest = results[0] if results else None
+    
+    # Fetch personalized recommendations based on the latest score
+    recommendations = None
+    if latest and 'score' in latest:
+        recommendations = get_recommendations(latest['score'])
 
-    return render_template("results.html", results=results, latest=latest)
+    return render_template("results.html", results=results, latest=latest, recs=recommendations)
 
 # ==============================
 # TEXT-QUIZ
@@ -131,11 +137,28 @@ def predict_quiz():
 
     result = predict_result(answers)
 
+    quiz_score = sum(answers)
+    
+    detailed_data = []
+    for i, ans in enumerate(answers):
+        detailed_data.append({
+            "question": quiz_questions[i],
+            "answer": ans
+        })
+    
+    # If in full assessment mode, save temp score and detailed data, then redirect to stage 2
+    if session.get('full_assessment_mode'):
+        session['temp_quiz_score'] = quiz_score
+        session['temp_quiz_data'] = detailed_data
+        return redirect(url_for('video_assessment'))
+
+    # Otherwise, save as a standalone quiz result
     save_result(
         session['user'],
         result.get("prediction"),
-        result.get("confidence", 0),
-        "quiz"
+        quiz_score,
+        "quiz",
+        detailed_data
     )
 
     return redirect(url_for('results_page'))
@@ -169,6 +192,12 @@ def analyze_voice():
     responses = []
     for q in VOICE_QUESTIONS:
         transcript = request.form.get(q["id"], "").strip()
+        
+        # Validation: Ensure they answered the question
+        if not transcript:
+            flash("Please provide an answer for all questions before submitting.", "error")
+            return redirect(url_for('voice_analysis_page'))
+            
         responses.append({
             "q_id":       q["id"],
             "question":   q["text"],
@@ -180,49 +209,121 @@ def analyze_voice():
 
     depression_level = result.get("depression_level", "Unknown")
     normalized_score = result.get("normalized_score", 0.0)
-    score_pct = round(normalized_score * 100)
+    score_out_of_27 = round(normalized_score * 27)
 
     save_result(
         session['user'],
         depression_level,
-        score_pct,
-        "voice"
+        score_out_of_27,
+        "voice",
+        responses
     )
 
     return redirect(url_for('results_page'))
 
+
 # ==============================
-# VIDEO ANALYSIS
+# FULL ASSESSMENT FLOW
 # ==============================
-@app.route('/analyze_video', methods=['POST'])
-def analyze_video():
+@app.route('/full_assessment_start', methods=['GET'])
+def full_assessment_start():
+    if 'user' not in session:
+        return redirect(url_for('home'))
+    # Set flag to trigger the sequential flow
+    session['full_assessment_mode'] = True
+    return redirect(url_for('predict_quiz'))
+
+@app.route('/video_assessment', methods=['GET'])
+def video_assessment():
+    if 'user' not in session:
+        return redirect(url_for('home'))
+    # Ensure they came from the text quiz
+    if not session.get('full_assessment_mode') or 'temp_quiz_score' not in session:
+        flash("Please start the full assessment from the beginning.", "error")
+        return redirect(url_for('assessment'))
+        
+    return render_template('video-assessment.html', questions=VOICE_QUESTIONS)
+
+@app.route('/analyze_full', methods=['POST'])
+def analyze_full():
     if 'user' not in session:
         return redirect(url_for('home'))
 
-    if 'video' not in request.files or request.files['video'].filename == '':
-        flash("Please select a video file before submitting.", "error")
-        return redirect(url_for('video_analysis_page'))
+    if not session.get('full_assessment_mode') or 'temp_quiz_score' not in session:
+        return redirect(url_for('assessment'))
 
-    file = request.files['video']
-
-    # Save file
-    file_path = os.path.join(TEMP_PATH, "temp.webm")
-    file.save(file_path)
-
-    # PLACEHOLDER ANALYSIS
-    voice_score = 1
-    face_score = 1
-    final_score = voice_score + face_score
-
-    if final_score <= 1:
-        label = "Low"
-    elif final_score <= 3:
-        label = "Medium"
+    # 1. Analyze Voice Responses
+    responses = []
+    for q in VOICE_QUESTIONS:
+        transcript = request.form.get(q["id"], "").strip()
+        
+        # Validation: Ensure they answered the question
+        if not transcript:
+            flash("Please provide a voice answer for all questions before submitting.", "error")
+            return redirect(url_for('video_assessment'))
+            
+        responses.append({
+            "q_id":       q["id"],
+            "question":   q["text"],
+            "indicator":  q["indicator"],
+            "transcript": transcript,
+        })
+    
+    voice_result = assess_depression(responses)
+    voice_normalized = voice_result.get("normalized_score", 0.0)
+    voice_score_27 = round(voice_normalized * 27)
+    
+    # 2. Combine Scores & Data
+    quiz_score = session.get('temp_quiz_score', 0)
+    quiz_data = session.get('temp_quiz_data', [])
+    
+    # Simple average for now
+    final_score = round((quiz_score + voice_score_27) / 2)
+    
+    # Determine final label
+    if final_score <= 4:
+        label = "Minimal"
+    elif final_score <= 9:
+        label = "Mild"
+    elif final_score <= 14:
+        label = "Moderate"
+    elif final_score <= 19:
+        label = "Moderately Severe"
     else:
-        label = "High"
+        label = "Severe"
+        
+    combined_data = {
+        "text_quiz": quiz_data,
+        "voice_analysis": responses
+    }
 
-    save_result(session['user'], label, final_score, "video")
+    # Save final full assessment result
+    save_result(
+        session['user'],
+        label,
+        final_score,
+        "full",
+        combined_data
+    )
+
+    # Clear session flags
+    session.pop('full_assessment_mode', None)
+    session.pop('temp_quiz_score', None)
+    session.pop('temp_quiz_data', None)
+
     return redirect(url_for('results_page'))
+
+# ==============================
+# HISTORY PAGE
+# ==============================
+@app.route('/history', methods=['GET'])
+def history_page():
+    if 'user' not in session:
+        return redirect(url_for('home'))
+
+    results = get_results_by_email(session['user'])
+    return render_template('history.html', results=results)
+
 
 # ==============================
 # LOGOUT

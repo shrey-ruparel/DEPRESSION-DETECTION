@@ -45,7 +45,7 @@
 /* ─── CARDS GRID ──────────────────────────────────── */
 .assess-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 24px;
     margin-bottom: 32px;
 }
@@ -80,6 +80,33 @@
 .assess-card:hover .assess-card-glow { opacity: 1; }
 .glow-purple { background: radial-gradient(ellipse at top left, rgba(124,58,237,0.15) 0%, transparent 60%); }
 .glow-cyan   { background: radial-gradient(ellipse at top left, rgba(6,182,212,0.12) 0%, transparent 60%); }
+.glow-blue   { background: radial-gradient(ellipse at top left, rgba(37,99,235,0.15) 0%, transparent 60%); }
+
+/* Recommended Card Styling */
+.assess-card.recommended-card {
+    border: 1px solid rgba(37,99,235,0.4);
+    background: rgba(37,99,235,0.04);
+}
+.assess-card.recommended-card:hover {
+    border-color: rgba(37,99,235,0.7);
+    box-shadow: 0 24px 60px rgba(37,99,235,0.15);
+}
+
+.recommended-badge {
+    position: absolute;
+    top: -1px;
+    right: 24px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 0 0 8px 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    z-index: 10;
+}
 
 /* Card header row */
 .assess-card-head {
@@ -99,6 +126,7 @@
 
 .icon-quiz  { background: linear-gradient(135deg, rgba(124,58,237,0.2), rgba(37,99,235,0.15)); color: #a78bfa; }
 .icon-voice { background: linear-gradient(135deg, rgba(6,182,212,0.2), rgba(37,99,235,0.15)); color: #67e8f9; }
+.icon-full  { background: linear-gradient(135deg, rgba(37,99,235,0.25), rgba(124,58,237,0.2)); color: #60a5fa; }
 
 /* Time tag */
 .assess-tag {
@@ -189,6 +217,9 @@
 .assess-info-item i { color: #a78bfa; font-size: 13px; }
 
 /* ─── RESPONSIVE ──────────────────────────────────── */
+@media (max-width: 1024px) {
+    .assess-grid { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 768px) {
     .assess-grid { grid-template-columns: 1fr; }
     .assess-title { font-size: 1.8rem; }

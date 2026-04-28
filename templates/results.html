@@ -25,7 +25,25 @@
     <!-- ── LATEST RESULT ───────────────────────────── -->
     {% if latest %}
 
-    {% set sc = latest.score | int %}
+    {% set sc = latest.score | default(0) | float | int %}
+    {% set bar_width = (sc * 100 // 27) if sc <= 27 else 100 %}
+    
+    {% if sc <= 4 %}
+        {% set s_cls = 'score-min' %}
+        {% set b_cls = 'bar-min' %}
+    {% elif sc <= 9 %}
+        {% set s_cls = 'score-mild' %}
+        {% set b_cls = 'bar-mild' %}
+    {% elif sc <= 14 %}
+        {% set s_cls = 'score-mod' %}
+        {% set b_cls = 'bar-mod' %}
+    {% elif sc <= 19 %}
+        {% set s_cls = 'score-sev' %}
+        {% set b_cls = 'bar-sev' %}
+    {% else %}
+        {% set s_cls = 'score-crit' %}
+        {% set b_cls = 'bar-crit' %}
+    {% endif %}
 
     <div class="latest-card">
         <div class="latest-card-glow"></div>
@@ -37,17 +55,16 @@
 
         <div class="latest-score-section">
 
-            <!-- Score box — colour and bar width computed inline (no scoping issue) -->
+            <!-- Score box -->
             <div class="score-box">
-                <div class="score-big {{ 'score-min' if sc <= 4 else 'score-mild' if sc <= 9 else 'score-mod' if sc <= 14 else 'score-sev' if sc <= 19 else 'score-crit' }}">
+                <div class="score-big {{ s_cls }}">
                     {{ sc }}
                 </div>
                 <div class="score-denom">/ 27</div>
                 <div class="score-sublabel">Total Score</div>
 
                 <div class="score-bar-wrap">
-                    <div class="score-bar {{ 'bar-min' if sc <= 4 else 'bar-mild' if sc <= 9 else 'bar-mod' if sc <= 14 else 'bar-sev' if sc <= 19 else 'bar-crit' }}"
-                         style="width: {{ sc * 100 // 27 if sc <= 27 else 100 }}%;"></div>
+                    <div class="score-bar {{ b_cls }}" {{ ('style="width: ' ~ bar_width ~ '%;"') | safe }}></div>
                 </div>
             </div>
 
@@ -108,46 +125,65 @@
     </div>
     {% endif %}
 
+    <!-- ── PERSONALISED ACTION PLAN ─────────────────── -->
+    {% if recs %}
+    <div class="action-plan-section fade-in" style="animation-delay: 0.4s;">
+        <h2 class="action-plan-title">
+            <i class="fas fa-hand-holding-heart"></i> Your Personalised Action Plan
+        </h2>
+        <p class="action-plan-subtitle">Based on your score, here are targeted recommendations to support your mental wellness.</p>
+
+        <div class="action-grid">
+            
+            <!-- Video Guidance -->
+            <div class="action-card video-card">
+                <div class="action-card-header">
+                    <i class="fab fa-youtube" style="color: #ef4444;"></i> Video Guidance
+                </div>
+                <div class="video-container">
+                    <iframe src="{{ recs.video_url }}" title="{{ recs.video_title }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+                <div class="action-card-title">{{ recs.video_title }}</div>
+            </div>
+
+            <!-- Meditation / Grounding Plan -->
+            <div class="action-card med-card">
+                <div class="action-card-header">
+                    <i class="fas fa-om" style="color: #a78bfa;"></i> Actionable Exercise
+                </div>
+                <div class="action-card-title">{{ recs.meditation.title }}</div>
+                <p class="action-desc">{{ recs.meditation.desc }}</p>
+                <ol class="action-list numbered">
+                    {% for step in recs.meditation.steps %}
+                    <li>{{ step }}</li>
+                    {% endfor %}
+                </ol>
+            </div>
+
+            <!-- Daily Tricks -->
+            <div class="action-card tricks-card">
+                <div class="action-card-header">
+                    <i class="fas fa-lightbulb" style="color: #fbbf24;"></i> Daily Tricks
+                </div>
+                <div class="action-card-title">Lifestyle Tweaks</div>
+                <ul class="action-list checkmarked">
+                    {% for trick in recs.tricks %}
+                    <li><i class="fas fa-check-circle" style="color: #34d399;"></i> {{ trick }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+        </div>
+    </div>
+    {% endif %}
+
     <!-- ── HISTORY ──────────────────────────────────── -->
     {% if results %}
-    <div class="history-section">
-        <div class="history-header">
-            <h2 class="history-title">
-                <i class="fas fa-clock-rotate-left"></i> Assessment History
-            </h2>
-            <span class="history-count">{{ results | length }} record{{ 's' if results | length != 1 }}</span>
-        </div>
-
-        <div class="history-list">
-            {% for item in results %}
-            <div class="history-item">
-
-                <!-- Type icon — inline ternary, no set needed -->
-                <div class="hist-icon-wrap {{ 'hist-voice' if item.type == 'voice' else 'hist-quiz' }}">
-                    <i class="{{ 'fas fa-microphone-lines' if item.type == 'voice' else 'fas fa-clipboard-list' }}"></i>
-                </div>
-
-                <!-- Details -->
-                <div class="hist-details">
-                    <div class="hist-top">
-                        <span class="hist-type">{{ item.type | capitalize if item.type else 'Assessment' }}</span>
-                        <span class="hist-date">{{ item.date }}</span>
-                    </div>
-                    <div class="hist-prediction">{{ item.prediction }}</div>
-                </div>
-
-                <!-- Score — colour class computed inline, no scoping issue -->
-                <div class="hist-score-wrap">
-                    {% set isc = item.score | int %}
-                    <div class="hist-score {{ 'score-min' if isc <= 4 else 'score-mild' if isc <= 9 else 'score-mod' if isc <= 14 else 'score-sev' if isc <= 19 else 'score-crit' }}">
-                        {{ item.score }}
-                    </div>
-                    <div class="hist-score-label">/ 27</div>
-                </div>
-
-            </div>
-            {% endfor %}
-        </div>
+    <div class="history-section" style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
+        <p style="color: var(--text-secondary); margin-bottom: 16px;">Want to see a detailed breakdown of your past assessments?</p>
+        <a href="{{ url_for('history_page') }}" class="btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); padding: 12px 24px; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-clock-rotate-left"></i> View Detailed History
+        </a>
     </div>
     {% endif %}
 
