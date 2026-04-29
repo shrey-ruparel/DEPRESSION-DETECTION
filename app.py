@@ -2,10 +2,13 @@ from flask import Flask, request, jsonify, session, render_template, url_for, re
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS
 import os
+import json
 
 # Import modules
 from modules.quiz import predict_result, questions as quiz_questions
 from modules.voice import assess_depression
+from modules.face import analyze_frames
+from modules.fusion import get_fused_score
 from modules.recommendations import get_recommendations
 from db import init_db, create_user, get_user_by_email, save_result, get_results_by_email
 
@@ -271,14 +274,33 @@ def analyze_full():
     
     voice_result = assess_depression(responses)
     voice_normalized = voice_result.get("normalized_score", 0.0)
-    voice_score_27 = round(voice_normalized * 27)
     
-    # 2. Combine Scores & Data
+    # 2. Analyze Face Frames
+    video_frames_str = request.form.get('video_frames', '[]')
+    try:
+        video_frames = json.loads(video_frames_str)
+    except:
+        video_frames = []
+        
+    face_result = analyze_frames(video_frames)
+    face_depression_score = face_result.get("face_depression_score", 0.5)
+    
+    # 3. Fuse Face and Voice Scores
+    fusion_result = get_fused_score(
+        face_depression_score=face_depression_score, 
+        voice_normalized_score=voice_normalized,
+        has_face=bool(video_frames),
+        has_voice=True
+    )
+    
+    fused_normalized = fusion_result["fused_score"]
+    fused_score_27 = round(fused_normalized * 27)
+    
+    # 4. Combine with Quiz Score
     quiz_score = session.get('temp_quiz_score', 0)
     quiz_data = session.get('temp_quiz_data', [])
     
-    # Simple average for now
-    final_score = round((quiz_score + voice_score_27) / 2)
+    final_score = round((quiz_score + fused_score_27) / 2)
     
     # Determine final label
     if final_score <= 4:
@@ -294,7 +316,9 @@ def analyze_full():
         
     combined_data = {
         "text_quiz": quiz_data,
-        "voice_analysis": responses
+        "voice_analysis": responses,
+        "face_analysis": face_result,
+        "fusion_details": fusion_result
     }
 
     # Save final full assessment result

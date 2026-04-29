@@ -50,6 +50,7 @@
         <!-- Chat / Questions Interface -->
         <div class="chat-container">
             <form action="{{ url_for('analyze_full') }}" method="POST" id="videoAssessmentForm">
+                <input type="hidden" name="video_frames" id="videoFrames">
                 
                 {% for q in questions %}
                 <div class="question-step {% if loop.first %}active{% endif %}" id="step-{{ loop.index }}">
@@ -90,20 +91,48 @@
 
 {% block extra_js %}
 <script>
-    // --- WEBCAM INITIALISATION ---
+    // --- WEBCAM INITIALISATION & FRAME CAPTURE ---
     const videoElement = document.getElementById('webcamVideo');
     const camError = document.getElementById('camError');
+    const videoFrames = [];
+    const hiddenFramesInput = document.getElementById('videoFrames');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let frameCaptureInterval;
 
     async function startCamera() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
             videoElement.srcObject = stream;
+            
+            // Wait for video metadata to load to get dimensions
+            videoElement.onloadedmetadata = () => {
+                startFrameCapture();
+            };
         } catch (err) {
             console.error("Error accessing camera: ", err);
             camError.style.display = 'flex';
         }
     }
     
+    function startFrameCapture() {
+        // Capture a frame every 2 seconds, max 30 frames (1 minute) to avoid huge payloads
+        frameCaptureInterval = setInterval(() => {
+            if (videoElement.videoWidth && videoElement.videoHeight && videoFrames.length < 30) {
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                // Compress JPEG to 0.6 quality to save memory/payload size
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                videoFrames.push({
+                    timestamp: Date.now(),
+                    data: dataUrl
+                });
+                hiddenFramesInput.value = JSON.stringify(videoFrames);
+            }
+        }, 2000);
+    }
+
     // Start camera on load
     window.addEventListener('DOMContentLoaded', startCamera);
 

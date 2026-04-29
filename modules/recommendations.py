@@ -15,7 +15,7 @@ def get_recommendations(score):
     if score <= 4:
         return {
             "tier": "Minimal",
-            "video_url": "https://www.youtube.com/embed/WPPPFqsECz0", # TED-Ed: How stress affects your brain
+            "video_url": "https://www.youtube.com/embed/WuyPuH9ojCE", # TED-Ed: How stress affects your brain
             "video_title": "Maintaining Mental Hygiene",
             "meditation": {
                 "title": "5-Minute Daily Reboot",
@@ -36,7 +36,7 @@ def get_recommendations(score):
     elif score <= 14:
         return {
             "tier": "Moderate",
-            "video_url": "https://www.youtube.com/embed/1I9ADpXG6cE", # How to cope with anxiety/depression (general)
+            "video_url": "https://www.youtube.com/embed/XiCrniLQGYc", # WHO: I Had a Black Dog, His Name was Depression
             "video_title": "Coping with Low Moods",
             "meditation": {
                 "title": "10-Minute Guided Mindfulness",
@@ -59,7 +59,7 @@ def get_recommendations(score):
         # 15-27: Severe
         return {
             "tier": "Severe",
-            "video_url": "https://www.youtube.com/embed/mMRrCYPxD0I", # Grounding technique video or similar
+            "video_url": "https://www.youtube.com/embed/30VMIEmA114", # 5-4-3-2-1 Grounding Technique
             "video_title": "Managing Overwhelming Distress",
             "meditation": {
                 "title": "The 5-4-3-2-1 Grounding Technique",
